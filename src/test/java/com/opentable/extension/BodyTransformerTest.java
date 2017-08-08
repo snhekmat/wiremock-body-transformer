@@ -444,4 +444,70 @@ public class BodyTransformerTest {
 		wireMockRule.verify(getRequestedFor(urlMatching("/any/emptyBodyAndEmptyBodyFile")));
 	}
 
+    @Test
+    public void injectCurrentDateTime() {
+        wireMockRule.stubFor(post(urlEqualTo("/get/this"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("content-type", "application/json")
+                        .withBody("{\"dateTime\":\"$(!Now)\", \"got\":\"it\"}")
+                        .withTransformers("body-transformer")));
+
+        given()
+                .contentType("application/json")
+                .body("{\"var\":1111}")
+                .when()
+                .post("/get/this")
+                .then()
+                .statusCode(200)
+                .body("dateTime", isA(String.class))
+                .body("got", equalTo("it"));
+
+        wireMockRule.verify(postRequestedFor(urlEqualTo("/get/this")));
+    }
+
+    @Test
+    public void injectCurrentDateTimeWithFormat() {
+        wireMockRule.stubFor(post(urlEqualTo("/get/this"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("content-type", "application/json")
+                        .withBody("{\"dateTime\":\"$(!Now[yyyy-MM-dd])\", \"got\":\"it\"}")
+                        .withTransformers("body-transformer")));
+
+        given()
+                .contentType("application/json")
+                .body("{\"var\":1111}")
+                .when()
+                .post("/get/this")
+                .then()
+                .statusCode(200)
+                .body("dateTime", isA(String.class))
+                .body("got", equalTo("it"));
+
+        wireMockRule.verify(postRequestedFor(urlEqualTo("/get/this")));
+    }    
+
+    @Test
+    public void injectCurrentDateTimeWithInvalidFormat() {
+        wireMockRule.stubFor(post(urlEqualTo("/get/this"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("content-type", "application/json")
+                        .withBody("{\"dateTime\":\"$(!Now[invalid])\", \"got\":\"it\"}")
+                        .withTransformers("body-transformer")));
+
+        given()
+                .contentType("application/json")
+                .body("{\"var\":1111}")
+                .when()
+                .post("/get/this")
+                .then()
+                .statusCode(200)
+                .body("dateTime", equalTo("null"))
+                .body("got", equalTo("it"));
+
+        wireMockRule.verify(postRequestedFor(urlEqualTo("/get/this")));
+    }    
+    
 }

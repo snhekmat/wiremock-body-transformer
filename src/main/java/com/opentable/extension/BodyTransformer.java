@@ -24,12 +24,16 @@ import com.github.tomakehurst.wiremock.extension.Parameters;
 import com.github.tomakehurst.wiremock.extension.ResponseDefinitionTransformer;
 import com.github.tomakehurst.wiremock.http.Request;
 import com.github.tomakehurst.wiremock.http.ResponseDefinition;
+
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +49,7 @@ public class BodyTransformer extends ResponseDefinitionTransformer {
     
     private static final Pattern interpolationPattern = Pattern.compile("\\$\\(.*?\\)");
     private static final Pattern randomIntegerPattern = Pattern.compile("!RandomInteger");
+    private static final Pattern currentDateTimePattern = Pattern.compile("\\$\\(!Now(\\[(.*?)\\])?\\)");
 
     private static ObjectMapper jsonMapper = initJsonMapper();
     private static ObjectMapper xmlMapper = initXmlMapper();
@@ -160,6 +165,23 @@ public class BodyTransformer extends ResponseDefinitionTransformer {
     private CharSequence getValue(String group, Map requestObject) {
         if (randomIntegerPattern.matcher(group).find()) {
             return String.valueOf(new Random().nextInt(2147483647));
+        }
+        else {
+            Matcher matcher = currentDateTimePattern.matcher(group);
+            if (matcher.find()) {
+                if (matcher.groupCount() >= 2 && matcher.group(2) != null) {
+                    String format = matcher.group(2);
+                    try {
+                        return LocalDateTime.now().format(DateTimeFormatter.ofPattern(format));
+                    }
+                    catch(IllegalArgumentException e) {
+                        return getValueFromRequestObject(group, requestObject);
+                    }
+                }
+                else {
+                    return DateTimeFormatter.ISO_INSTANT.format(Instant.now());
+                }
+            }            
         }
 
         return getValueFromRequestObject(group, requestObject);

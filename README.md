@@ -7,7 +7,7 @@ Built on the extensions platform of Wiremock, it allows your wiremock response t
 <dependency>
 		<groupId>com.opentable</groupId>
 		<artifactId>wiremock-body-transformer</artifactId>
-		<version>1.1.6</version>
+		<version>1.1.8</version>
 </dependency>
 ```
 
@@ -249,3 +249,30 @@ The sample response body will return:
 }
 ```
 
+#### Current DateTime Generator
+With the pattern `$(!Now) or `$(!Now[format])` inside the stub response body, current DateTime string will be interpolated in that position.
+By default it use ISO_INSTANT pattern for formatting, however a custom format can be defined using `$(!Now[format])` pattern.
+
+##### Example
+```
+{
+    "request": {
+        "method": "POST",
+        "urlPath": "/transform",
+    },
+    "response": {
+        "status": 200,
+        "body": "{\"dateTime\":\"$(!Now)\" , \"formattedDateTime\":\"$(!Now[yyyy/MM/dd])\"}",
+        "headers": {
+            "Content-Type": "application/json"
+        },
+        "transformers": ["body-transformer"]
+    }
+}
+```
+The sample response body will return: (the values will change in runtime)
+```
+{
+    "dateTime": "2017-08-08T01:06:46.812Z", "formattedDateTime":"2017/08/08"
+}
+```
